@@ -80,7 +80,7 @@ public class WekaCrossValidation {
         PrintWriter OutputFile = new PrintWriter(OUTPUT_FILE + "_output.tsv", "UTF-8");        
         OutputFile.println("Performing " + Integer.toString(NUM_REPLICATIONS)
                     + " X " + Integer.toString(NUM_FOLDS) + " Cross Validation.");
-        OutputFile.println("Classifier\tParameter\tAccuracy\tAUC\terrorRate");
+        // OutputFile.println("Classifier\tParameter\tAccuracy\tAUC\terrorRate");
 
         //Do NUM_REPLICATIONS x NUM_FOLDS cross validation
         for (int i = 0; i < NUM_REPLICATIONS; i++){
@@ -101,7 +101,7 @@ public class WekaCrossValidation {
                     Evaluation eval = evaluateClassifier(c, randData, n);
                     
                     // Calculate overall accuracy and AUC of current classifier
-                    OutputFile.print(c.getClass().getSimpleName() + "\tNone");
+                    OutputFile.print(c.getClass().getSimpleName() + "\n\t");
                     accuracy = eval.pctCorrect();
                     AUC = eval.weightedAreaUnderROC();
                     errorRate = eval.errorRate();
@@ -112,27 +112,30 @@ public class WekaCrossValidation {
                     // System.out.println(c.getClass().getSimpleName()+ "  = " +eval.errorRate());
                     // System.out.println(errorsMap.get(c.getClass().getSimpleName())[i*n]);
                     // Print current classifier's name and accuracy
-                    OutputFile.println("\t" + String.format("%.2f%%", accuracy)
-                            + "\t" + String.format("%.3f", AUC)+ "\t" + String.format("%.3f", errorRate));
+                    OutputFile.println("Accuracy = " + String.format("%.2f%%", accuracy)
+                            + ",\t AUC = " + String.format("%.3f", AUC)+ ",\t Error Rate = " + String.format("%.3f", errorRate));
                 }
             }        
         }
 
-
+        OutputFile.println("\n\n\n\n");
         
         errorsMap.forEach((c1, errors1)-> {
             errorsMap.forEach((c2, errors2) -> {
                     if(!c1.equals(c2)) {
                         // System.out.println("t("+c1+", "+c2 + ") = "+ Double.toString(tstatistic));
+                        OutputFile.println("------------------------------------------------------");
+                        OutputFile.println("("+c1 + " Vs " + c2 + ")");
                         /* Computes a paired, 2-sample t-statistic based on the data in the input arrays. */
-                        OutputFile.println("pairedT/t-statistic("+c1+", "+c2 + ") = "+ Double.toString(ttester.pairedT(errors1, errors2)));
+                        OutputFile.println("\tpairedT/t-statistic = " + Double.toString(ttester.pairedT(errors1, errors2)));
                         /* Returns the observed significance level, or p-value, associated with a paired, two-sample, two-tailed t-test based on the data in the input arrays. */
-                        OutputFile.println("pairedTTest/observed significance level/p-value("+c1+", "+c2 + ") = "+ Double.toString(ttester.pairedTTest(errors1, errors2)));
+                        OutputFile.println("\tpairedTTest/observed significance level/p-value = " + Double.toString(ttester.pairedTTest(errors1, errors2)));
                         /** Performs a paired t-test evaluating the null hypothesis that the 
                             mean of the paired differences between sample1 and sample2 is 0 in favor of 
                             the two-sided alternative that the mean paired difference is not equal to 0, with significance level alpha.
                           */
-                        OutputFile.println("pairedTTest null hypothesis("+c1+", "+c2 + ") = "+ Boolean.toString(ttester.pairedTTest(errors1, errors2, 0.05)));
+                        OutputFile.println("\tpairedTTest null hypothesis (with alpha = 0.05) = "+ Boolean.toString(ttester.pairedTTest(errors1, errors2, 0.05)));
+                        OutputFile.println("------------------------------------------------------");
                     }
                 });
             });
