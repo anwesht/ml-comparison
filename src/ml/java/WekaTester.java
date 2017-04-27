@@ -3,6 +3,8 @@
 // Random forest, decision tree, naive bayes, nearest neighbor, SVM
 // We calculate the accuracy and AUC and write it to a tab separated
 // file called output.tsv
+// Compile from src directory: javac -d ../bin ml/java/WekaTester.java
+// Run from bin directory: java ml.java.WekaTester
 package ml.java;
 
 import java.util.*;
@@ -21,6 +23,7 @@ import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
 import ml.java.WekaCrossValidation;
+import ml.java.Stats;
 
 public class WekaTester {
     public static String FILE_PATH = "/Users/atuladhar/wekafiles/my_data/iris.arff";
@@ -35,8 +38,9 @@ public class WekaTester {
         DataSource source = new DataSource(FILE_PATH);
         Instances data = source.getDataSet();
 
+        String outputFile = FILE_PATH.substring(FILE_PATH.lastIndexOf('/') + 1);
         List<Classifier> classifierList = new ArrayList<Classifier>();
-        WekaCrossValidation cv = new WekaCrossValidation();
+        WekaCrossValidation cv = new WekaCrossValidation(5, 2, outputFile);
 
         //********************************** Decision Tree ************************************//
         J48 modelDT = new J48();
@@ -66,5 +70,17 @@ public class WekaTester {
 
         // For given data, Cross Validate all the classifiers.
         cv.crossValidate(classifierList, data);
+        // Map<String, double[]> errorsMap = cv.crossValidate(classifierList, data);
+        /*
+        TTest ttester = new TTest();
+        
+        errorsMap.forEach((c1, errors1)-> {
+            errorsMap.forEach((c2, errors2) -> {
+                    if(!c1.equals(c2)) {
+                        double tstatistic = ttester.pairedTTest(errors1, errors2);
+                        System.out.println("t("+c1+", "+c2 + ") = "+ Double.toString(tstatistic));    
+                    }
+                });
+            });*/
     }
 }

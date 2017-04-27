@@ -10,8 +10,9 @@ package ml.java;
 import java.util.*;
 import java.io.PrintWriter;
 
-import weka.classifiers.Classifier;
+import org.apache.commons.math3.stat.inference.TTest; 
 
+import weka.classifiers.Classifier;
 
 import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
@@ -26,6 +27,7 @@ import weka.core.converters.ConverterUtils.DataSource;
 public class WekaCrossValidation {
     public int NUM_REPLICATIONS;
     public int NUM_FOLDS;
+    public String OUTPUT_FILE;
     public static int BASE_SEED = 2017;
 
     public WekaCrossValidation(){
@@ -36,6 +38,12 @@ public class WekaCrossValidation {
     public WekaCrossValidation(int num_replications, int num_folds) {
         this.NUM_REPLICATIONS = num_replications;
         this.NUM_FOLDS = num_folds;
+    }
+
+    public WekaCrossValidation(int num_replications, int num_folds, String outputFile) {
+        this.NUM_REPLICATIONS = num_replications;
+        this.NUM_FOLDS = num_folds;
+        this.OUTPUT_FILE = outputFile;
     }
 
     private Evaluation evaluateClassifier (Classifier c, Instances randData, int n) throws Exception {
@@ -51,27 +59,29 @@ public class WekaCrossValidation {
     }
     
     public void crossValidate(List<Classifier> classifierList, Instances data) throws Exception {
-    	// Variables to store the accuracy and area under ROC
+    // public Map<String, double[]> crossValidate(List<Classifier> classifierList, Instances data) throws Exception {
+    	// Variables to store the accuracy, area under ROC, errorRate and t-statistics
         double accuracy;
         double AUC;
+        double errorRate;
+        TTest ttester = new TTest();
 
-        // Create output file and write header to it
-        PrintWriter OutputFile = new PrintWriter("output.tsv", "UTF-8");
-        // OutputFile.println("File name: " + FILE_PATH);
-        OutputFile.println("Classifier\tParameter\tAccuracy\tAUC");
-
-        // Load the data
-        /*DataSource source = new DataSource(FILE_PATH);
-        Instances data = source.getDataSet();*/
-        // setting class attribute if the data format does not provide this information
-        // For example, the XRFF format saves the class attribute information as well
         if (data.classIndex() == -1){
-            System.out.println("here");
             data.setClassIndex(data.numAttributes() - 1);
         }
 
-        // J48 modelDT = new J48();
-        
+        Map<String, double[]> errorsMap = new HashMap<String, double[]>();
+        for (int i = 0; i < classifierList.size(); i++) {
+            errorsMap.put(classifierList.get(i).getClass().getSimpleName(), new double[NUM_REPLICATIONS*NUM_FOLDS]);
+        }
+
+
+        // Create output file and write header to it
+        PrintWriter OutputFile = new PrintWriter(OUTPUT_FILE + "_output.tsv", "UTF-8");        
+        OutputFile.println("Performing " + Integer.toString(NUM_REPLICATIONS)
+                    + " X " + Integer.toString(NUM_FOLDS) + " Cross Validation.");
+        OutputFile.println("Classifier\tParameter\tAccuracy\tAUC\terrorRate");
+
         //Do NUM_REPLICATIONS x NUM_FOLDS cross validation
         for (int i = 0; i < NUM_REPLICATIONS; i++){
             Random rand = new Random(BASE_SEED + i);   // create seeded number generator
@@ -82,22 +92,52 @@ public class WekaCrossValidation {
             }
 
             for(int n = 0; n < NUM_FOLDS; n++) {
-                // Classifier clsCopy = Classifier.makeCopy((Classifier)modelDT);
-                
+                OutputFile.println("------------------------------------------------------");
+                OutputFile.println("NUM_REPLICATION = " + Integer.toString(i+1)
+                    + "  NUM_FOLD = " + Integer.toString(n+1));
+                OutputFile.println("------------------------------------------------------");
+
                 for(Classifier c : classifierList){
                     Evaluation eval = evaluateClassifier(c, randData, n);
                     
                     // Calculate overall accuracy and AUC of current classifier
-                    OutputFile.print(c.getClass().getName() + "\tNone");
+                    OutputFile.print(c.getClass().getSimpleName() + "\tNone");
                     accuracy = eval.pctCorrect();
                     AUC = eval.weightedAreaUnderROC();
+                    errorRate = eval.errorRate();
+
+                    //Add errorRates to map.
+                    errorsMap.get(c.getClass().getSimpleName())[i*n] = errorRate;
+
+                    // System.out.println(c.getClass().getSimpleName()+ "  = " +eval.errorRate());
+                    // System.out.println(errorsMap.get(c.getClass().getSimpleName())[i*n]);
                     // Print current classifier's name and accuracy
                     OutputFile.println("\t" + String.format("%.2f%%", accuracy)
-                            + "\t" + String.format("%.3f", AUC));
+                            + "\t" + String.format("%.3f", AUC)+ "\t" + String.format("%.3f", errorRate));
                 }
             }        
         }
+
+
         
+        errorsMap.forEach((c1, errors1)-> {
+            errorsMap.forEach((c2, errors2) -> {
+                    if(!c1.equals(c2)) {
+                        // System.out.println("t("+c1+", "+c2 + ") = "+ Double.toString(tstatistic));
+                        /* Computes a paired, 2-sample t-statistic based on the data in the input arrays. */
+                        OutputFile.println("pairedT/t-statistic("+c1+", "+c2 + ") = "+ Double.toString(ttester.pairedT(errors1, errors2)));
+                        /* Returns the observed significance level, or p-value, associated with a paired, two-sample, two-tailed t-test based on the data in the input arrays. */
+                        OutputFile.println("pairedTTest/observed significance level/p-value("+c1+", "+c2 + ") = "+ Double.toString(ttester.pairedTTest(errors1, errors2)));
+                        /** Performs a paired t-test evaluating the null hypothesis that the 
+                            mean of the paired differences between sample1 and sample2 is 0 in favor of 
+                            the two-sided alternative that the mean paired difference is not equal to 0, with significance level alpha.
+                          */
+                        OutputFile.println("pairedTTest null hypothesis("+c1+", "+c2 + ") = "+ Boolean.toString(ttester.pairedTTest(errors1, errors2, 0.05)));
+                    }
+                });
+            });
+
         OutputFile.close();
+        // return errorsMap;
     }
 }
