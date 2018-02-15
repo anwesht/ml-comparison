@@ -44,7 +44,7 @@ public class WekaTester {
 
         //********************************** Decision Tree ************************************//
         J48 modelDT = new J48();
-        classifierList.add(modelDT);
+        // classifierList.add(modelDT);
 
         //********************************** Random Forest ************************************//
         RandomForest modelRF = new RandomForest();
@@ -57,30 +57,18 @@ public class WekaTester {
         rfOptions[4] = "-K";  // Number of attributes to randomly investigate. (default 0) (<1 = int(log_2(#predictors)+1)).
         rfOptions[5] = "15";
         modelRF.setOptions(rfOptions);
-        classifierList.add(modelRF);
+        // classifierList.add(modelRF);
 
         //********************************** SVM ************************************//
         SMO modelSVM = new SMO();       //SMO = Sequential Minimal Optimization algorithm for training a support vector classifier.
         // Parameters for this classifier
         String[] svmOptions = new String[2];
         svmOptions[0] = "-C";  // The complexity constant C. (default 1)
-        svmOptions[1] = "10.0";
+        svmOptions[1] = "1.0";
         modelSVM.setOptions(svmOptions);
         classifierList.add(modelSVM);
 
         // For given data, Cross Validate all the classifiers.
         cv.crossValidate(classifierList, data);
-        // Map<String, double[]> errorsMap = cv.crossValidate(classifierList, data);
-        /*
-        TTest ttester = new TTest();
-        
-        errorsMap.forEach((c1, errors1)-> {
-            errorsMap.forEach((c2, errors2) -> {
-                    if(!c1.equals(c2)) {
-                        double tstatistic = ttester.pairedTTest(errors1, errors2);
-                        System.out.println("t("+c1+", "+c2 + ") = "+ Double.toString(tstatistic));    
-                    }
-                });
-            });*/
     }
 }

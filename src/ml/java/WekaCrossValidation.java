@@ -5,8 +5,6 @@
 // file called output.tsv
 package ml.java;
 
-// import java.util.Arrays;
-// import java.util.Random;
 import java.util.*;
 import java.io.PrintWriter;
 
@@ -75,12 +73,10 @@ public class WekaCrossValidation {
             errorsMap.put(classifierList.get(i).getClass().getSimpleName(), new double[NUM_REPLICATIONS*NUM_FOLDS]);
         }
 
-
         // Create output file and write header to it
         PrintWriter OutputFile = new PrintWriter(OUTPUT_FILE + "_output.tsv", "UTF-8");        
         OutputFile.println("Performing " + Integer.toString(NUM_REPLICATIONS)
                     + " X " + Integer.toString(NUM_FOLDS) + " Cross Validation.");
-        // OutputFile.println("Classifier\tParameter\tAccuracy\tAUC\terrorRate");
 
         //Do NUM_REPLICATIONS x NUM_FOLDS cross validation
         for (int i = 0; i < NUM_REPLICATIONS; i++){
@@ -97,22 +93,27 @@ public class WekaCrossValidation {
                     + "  NUM_FOLD = " + Integer.toString(n+1));
                 OutputFile.println("------------------------------------------------------");
 
+                System.out.println("------------------------------------------------------");
+                System.out.println("NUM_REPLICATION = " + Integer.toString(i+1)
+                    + "  NUM_FOLD = " + Integer.toString(n+1));
+                System.out.println("------------------------------------------------------");
+
                 for(Classifier c : classifierList){
                     Evaluation eval = evaluateClassifier(c, randData, n);
                     
                     // Calculate overall accuracy and AUC of current classifier
                     OutputFile.print(c.getClass().getSimpleName() + "\n\t");
+                    System.out.print(c.getClass().getSimpleName() + "\n\t");
                     accuracy = eval.pctCorrect();
                     AUC = eval.weightedAreaUnderROC();
                     errorRate = eval.errorRate();
 
                     //Add errorRates to map.
                     errorsMap.get(c.getClass().getSimpleName())[i*n] = errorRate;
-
-                    // System.out.println(c.getClass().getSimpleName()+ "  = " +eval.errorRate());
-                    // System.out.println(errorsMap.get(c.getClass().getSimpleName())[i*n]);
                     // Print current classifier's name and accuracy
                     OutputFile.println("Accuracy = " + String.format("%.2f%%", accuracy)
+                            + ",\t AUC = " + String.format("%.3f", AUC)+ ",\t Error Rate = " + String.format("%.3f", errorRate));
+                    System.out.println("Accuracy = " + String.format("%.2f%%", accuracy)
                             + ",\t AUC = " + String.format("%.3f", AUC)+ ",\t Error Rate = " + String.format("%.3f", errorRate));
                 }
             }        
